@@ -108,6 +108,9 @@ h1 em, h2 span, .display-copy span, .statement-section span, .contact-content sp
 .contact-section .section-kicker { color: #c94516; }
 .contact-content p { max-width: 390px; margin: 29px 0 27px; color: rgba(31,31,41,.6); font-size: 14px; line-height: 1.7; }
 .contact-content .button { color: #fff; }
+.contact-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
+.contact-phone { display: inline-flex; align-items: center; gap: 7px; color: rgba(31,31,41,.72); font-size: 12px; font-weight: 700; transition: color .2s ease; }
+.contact-phone:hover { color: #c94516; }
 .contact-orbit { width: 410px; height: 410px; position: relative; margin-right: 80px; border: 1px solid rgba(31,31,41,.22); border-radius: 50%; animation: spin 25s linear infinite; }
 .contact-orbit::before, .contact-orbit::after { content: ''; position: absolute; border: 1px solid rgba(201,69,22,.3); border-radius: 50%; inset: 38px; }
 .contact-orbit::after { inset: 88px; border-color: rgba(31,31,41,.18); }
