@@ -1,5 +1,5 @@
 import Logo from "@/components/Logo";
-import { navLinks, site } from "@/content/site";
+import { mailtoUrl, navLinks, site } from "@/content/site";
 import { ArrowUpRight } from "lucide-react";
 
 export default function SiteFooter() {
@@ -17,7 +17,7 @@ export default function SiteFooter() {
                 {link.label}
               </a>
             ))}
-          <a href="#contato">Contato</a>
+          <a href={mailtoUrl}>{site.email}</a>
           <a href={site.instagram} target="_blank" rel="noreferrer">
             Instagram <ArrowUpRight size={14} aria-hidden="true" />
           </a>

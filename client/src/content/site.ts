@@ -11,15 +11,9 @@ export const site = {
   description:
     "A Scalio conecta estratégia, tecnologia e execução para transformar processos complexos em operações mais eficientes, seguras e preparadas para crescer.",
   email: "comercial@nexusdevhub.com",
-  whatsapp: {
-    // Número em formato internacional, sem símbolos (usado no link wa.me).
-    number: "5511965085130",
-    label: "(11) 96508-5130",
-  },
   instagram: "https://www.instagram.com/scalio.consultoria/",
 } as const;
 
-export const whatsappUrl = `https://wa.me/${site.whatsapp.number}`;
 export const mailtoUrl = `mailto:${site.email}`;
 
 export const navLinks = [

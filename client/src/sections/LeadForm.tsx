@@ -1,4 +1,4 @@
-import { leadAreas, mailtoUrl, site, whatsappUrl } from "@/content/site";
+import { leadAreas, mailtoUrl, site } from "@/content/site";
 import { track } from "@/lib/analytics";
 import { ArrowUpRight, FileText, Loader2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -8,7 +8,7 @@ type Status = "idle" | "sending" | "success" | "fallback" | "error";
 /**
  * Endpoint que recebe o lead (Formspree, Resend, n8n, API própria...).
  * Definido em `.env` como VITE_LEAD_ENDPOINT. Sem ele o formulário cai para
- * o fluxo de e-mail/WhatsApp, mas nunca descarta o lead em silêncio.
+ * o fluxo de e-mail, mas nunca descarta o lead em silêncio.
  */
 const LEAD_ENDPOINT = import.meta.env.VITE_LEAD_ENDPOINT as string | undefined;
 
@@ -28,13 +28,6 @@ function buildMailto(lead: Lead) {
     }`,
   );
   return `${mailtoUrl}?subject=${subject}&body=${body}`;
-}
-
-function buildWhatsapp(lead: Lead) {
-  const text = encodeURIComponent(
-    `Olá! Quero um diagnóstico de eficiência.\nNome: ${lead.name}\nEmpresa: ${lead.company}\nÁrea: ${lead.area}`,
-  );
-  return `${whatsappUrl}?text=${text}`;
 }
 
 export default function LeadForm() {
@@ -152,20 +145,13 @@ export default function LeadForm() {
         {status === "fallback" && lead && (
           <p>
             Abrimos seu aplicativo de e-mail. Não abriu?{" "}
-            <a href={buildMailto(lead)}>Enviar para {site.email}</a> ou{" "}
-            <a href={buildWhatsapp(lead)} target="_blank" rel="noreferrer">
-              falar no WhatsApp
-            </a>
-            .
+            <a href={buildMailto(lead)}>Enviar para {site.email}</a>.
           </p>
         )}
         {status === "error" && lead && (
           <p className="is-error">
-            Não conseguimos enviar agora. Fale com a gente por{" "}
-            <a href={buildWhatsapp(lead)} target="_blank" rel="noreferrer">
-              WhatsApp
-            </a>{" "}
-            ou <a href={buildMailto(lead)}>e-mail</a>.
+            Não conseguimos enviar agora. Envie direto para{" "}
+            <a href={buildMailto(lead)}>{site.email}</a>.
           </p>
         )}
       </div>

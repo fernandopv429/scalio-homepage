@@ -1,6 +1,6 @@
-import { mailtoUrl, site, whatsappUrl } from "@/content/site";
+import { mailtoUrl, site } from "@/content/site";
 import { track } from "@/lib/analytics";
-import { ArrowUpRight, MessageCircle } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import LeadForm from "./LeadForm";
 
 export default function Contact() {
@@ -18,16 +18,6 @@ export default function Contact() {
           <div className="contact-actions">
             <a className="button button-primary" href={mailtoUrl} onClick={() => track("cta_email")}>
               {site.email} <ArrowUpRight size={17} aria-hidden="true" />
-            </a>
-            <a
-              className="contact-phone"
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => track("cta_whatsapp", { origin: "contato" })}
-            >
-              <MessageCircle size={15} aria-hidden="true" /> WhatsApp: {site.whatsapp.label}{" "}
-              <ArrowUpRight size={15} aria-hidden="true" />
             </a>
           </div>
         </div>

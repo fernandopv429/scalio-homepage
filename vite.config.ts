@@ -223,7 +223,6 @@ function vitePluginSeo(siteUrl: string): Plugin {
           description:
             "Transformação digital estratégica: automação e RPA, IA aplicada, nuvem, produtividade e segurança para empresas mais eficientes.",
           email: "comercial@nexusdevhub.com",
-          telephone: "+5511965085130",
           areaServed: "BR",
           availableLanguage: "pt-BR",
           sameAs: ["https://www.instagram.com/scalio.consultoria/"],

@@ -31,7 +31,7 @@ class ErrorBoundary extends Component<Props, State> {
             <h1 className="text-xl mb-4">Algo deu errado nesta página.</h1>
 
             <p className="text-sm text-muted-foreground mb-6 text-center">
-              Recarregue a página. Se o erro continuar, fale com a gente pelo WhatsApp (11) 96508-5130.
+              Recarregue a página. Se o erro continuar, fale com a gente em comercial@nexusdevhub.com.
             </p>
 
             <div className="p-4 w-full rounded bg-muted overflow-auto mb-6">

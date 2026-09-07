@@ -38,7 +38,7 @@ Todas são opcionais — veja `.env.example`. O site sobe sem nenhuma delas.
 | Variável                    | Efeito quando ausente                                  |
 | --------------------------- | ------------------------------------------------------ |
 | `VITE_SITE_URL`             | canonical/OG/JSON-LD ficam relativos; sitemap não é gerado |
-| `VITE_LEAD_ENDPOINT`        | formulário cai para e-mail/WhatsApp                    |
+| `VITE_LEAD_ENDPOINT`        | formulário cai para envio por e-mail                   |
 | `VITE_ANALYTICS_ENDPOINT`   | script de analytics não é injetado                     |
 | `VITE_ANALYTICS_WEBSITE_ID` | script de analytics não é injetado                      |
 
@@ -72,9 +72,9 @@ quebrada. **Para usar a logo oficial, coloque o PNG em
 
 ## Formulário de diagnóstico
 
-Sem `VITE_LEAD_ENDPOINT` o envio abre o cliente de e-mail e mostra links de
-fallback (e-mail e WhatsApp) — nunca descarta o lead em silêncio. Com o
-endpoint configurado, o formulário faz `POST` JSON:
+Sem `VITE_LEAD_ENDPOINT` o envio abre o cliente de e-mail e mostra um link
+de fallback para `comercial@nexusdevhub.com` — nunca descarta o lead em
+silêncio. Com o endpoint configurado, o formulário faz `POST` JSON:
 
 ```json
 {

@@ -17,7 +17,6 @@ declare global {
 
 export type ConversionEvent =
   | "cta_hero"
-  | "cta_whatsapp"
   | "cta_email"
   | "cta_service"
   | "cta_case"
