@@ -1,5 +1,6 @@
 import { leadAreas, mailtoUrl, site } from "@/content/site";
 import { track } from "@/lib/analytics";
+import { splitContact, trackMeta } from "@/lib/meta";
 import { ArrowUpRight, FileText, Loader2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
@@ -30,6 +31,14 @@ function buildMailto(lead: Lead) {
   return `${mailtoUrl}?subject=${subject}&body=${body}`;
 }
 
+/** Envia a conversão para o Meta Pixel e para o Conversions API. */
+function reportLead(lead: Lead) {
+  trackMeta("Lead", {
+    user: { ...splitContact(lead.contact), name: lead.name },
+    customData: { content_name: "Diagnóstico inicial", area: lead.area || "não informado" },
+  });
+}
+
 export default function LeadForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [lead, setLead] = useState<Lead | null>(null);
@@ -56,6 +65,7 @@ export default function LeadForm() {
       // acontecer, os links de fallback continuam visíveis na tela.
       setStatus("fallback");
       track("lead_submit", { channel: "mailto" });
+      reportLead(payload);
       window.location.href = buildMailto(payload);
       return;
     }
@@ -70,6 +80,7 @@ export default function LeadForm() {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       setStatus("success");
       track("lead_submit", { channel: "endpoint" });
+      reportLead(payload);
       form.reset();
     } catch (error) {
       setStatus("error");

@@ -1,5 +1,6 @@
 import { mailtoUrl, site } from "@/content/site";
 import { track } from "@/lib/analytics";
+import { trackMeta } from "@/lib/meta";
 import { ArrowUpRight } from "lucide-react";
 import LeadForm from "./LeadForm";
 
@@ -16,7 +17,14 @@ export default function Contact() {
           </h2>
           <p>Conte onde sua empresa quer chegar. A gente ajuda a encontrar o próximo passo.</p>
           <div className="contact-actions">
-            <a className="button button-primary" href={mailtoUrl} onClick={() => track("cta_email")}>
+            <a
+              className="button button-primary"
+              href={mailtoUrl}
+              onClick={() => {
+                track("cta_email");
+                trackMeta("Contact", { customData: { origin: "contato" } });
+              }}
+            >
               {site.email} <ArrowUpRight size={17} aria-hidden="true" />
             </a>
           </div>

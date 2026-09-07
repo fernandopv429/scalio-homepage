@@ -1,5 +1,6 @@
 import { faqs, mailtoUrl, site } from "@/content/site";
 import { track } from "@/lib/analytics";
+import { trackMeta } from "@/lib/meta";
 import { ArrowUpRight, Plus, X } from "lucide-react";
 import { useState } from "react";
 
@@ -17,7 +18,14 @@ export default function Faq() {
             <span>começar.</span>
           </h2>
           <p>Se a sua dúvida não estiver aqui, fale diretamente com a nossa equipe.</p>
-          <a className="text-link dark-link" href={mailtoUrl} onClick={() => track("cta_email", { origin: "faq" })}>
+          <a
+            className="text-link dark-link"
+            href={mailtoUrl}
+            onClick={() => {
+              track("cta_email", { origin: "faq" });
+              trackMeta("Contact", { customData: { origin: "faq" } });
+            }}
+          >
             {site.email} <ArrowUpRight size={15} aria-hidden="true" />
           </a>
         </div>
