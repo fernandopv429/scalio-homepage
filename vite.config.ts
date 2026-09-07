@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
-import { defineConfig, type Plugin, type ViteDevServer } from "vite";
+import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 // =============================================================================
@@ -203,39 +203,169 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
+/**
+ * SEO: resolve __SITE_URL__ no HTML e emite robots.txt / sitemap.xml.
+ *
+ * Sem VITE_SITE_URL definido as URLs viram relativas (válidas, só menos
+ * completas) e o sitemap é omitido — nunca um placeholder literal no HTML
+ * publicado, que era o bug do script de analytics antigo.
+ */
+function vitePluginSeo(siteUrl: string): Plugin {
+  return {
+    name: "scalio-seo",
+    transformIndexHtml: {
+      order: "pre",
+      handler(html) {
+        const jsonLd: Record<string, unknown> = {
+          "@context": "https://schema.org",
+          "@type": "ProfessionalService",
+          name: "Scalio",
+          description:
+            "Transformação digital estratégica: automação e RPA, IA aplicada, nuvem, produtividade e segurança para empresas mais eficientes.",
+          email: "comercial@nexusdevhub.com",
+          telephone: "+5511965085130",
+          areaServed: "BR",
+          availableLanguage: "pt-BR",
+          sameAs: ["https://www.instagram.com/scalio.consultoria/"],
+          knowsAbout: [
+            "Automação de processos",
+            "RPA",
+            "Inteligência artificial aplicada",
+            "Microsoft 365",
+            "Google Cloud",
+            "Segurança da informação",
+          ],
+        };
+        if (siteUrl) {
+          jsonLd.url = `${siteUrl}/`;
+          jsonLd.logo = `${siteUrl}/logo-scalio.png`;
+          jsonLd.image = `${siteUrl}/og-image.png`;
+        }
 
-export default defineConfig({
-  plugins,
-  resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+        return {
+          html: html.replaceAll("__SITE_URL__", siteUrl),
+          tags: [
+            // Injetadas aqui (e não no HTML) porque o Vite trata todo
+            // <link href> como asset: um canonical relativo quebra o build.
+            ...(siteUrl
+              ? [
+                  {
+                    tag: "link",
+                    attrs: { rel: "canonical", href: `${siteUrl}/` },
+                    injectTo: "head" as const,
+                  },
+                  {
+                    tag: "meta",
+                    attrs: { property: "og:url", content: `${siteUrl}/` },
+                    injectTo: "head" as const,
+                  },
+                ]
+              : []),
+            {
+              tag: "script",
+              attrs: { type: "application/ld+json" },
+              children: JSON.stringify(jsonLd),
+              injectTo: "head" as const,
+            },
+          ],
+        };
+      },
     },
-  },
-  envDir: path.resolve(import.meta.dirname),
-  root: path.resolve(import.meta.dirname, "client"),
-  build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true,
-  },
-  server: {
-    port: 3000,
-    strictPort: false, // Will find next available port if 3000 is busy
-    host: true,
-    allowedHosts: [
-      ".manuspre.computer",
-      ".manus.computer",
-      ".manus-asia.computer",
-      ".manuscomputer.ai",
-      ".manusvm.computer",
-      "localhost",
-      "127.0.0.1",
+    generateBundle() {
+      const robots = ["User-agent: *", "Allow: /"];
+      if (siteUrl) robots.push(`Sitemap: ${siteUrl}/sitemap.xml`);
+      this.emitFile({ type: "asset", fileName: "robots.txt", source: `${robots.join("\n")}\n` });
+
+      if (siteUrl) {
+        const today = new Date().toISOString().slice(0, 10);
+        this.emitFile({
+          type: "asset",
+          fileName: "sitemap.xml",
+          source: [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+            "  <url>",
+            `    <loc>${siteUrl}/</loc>`,
+            `    <lastmod>${today}</lastmod>`,
+            "    <changefreq>monthly</changefreq>",
+            "    <priority>1.0</priority>",
+            "  </url>",
+            "</urlset>",
+            "",
+          ].join("\n"),
+        });
+      }
+    },
+  };
+}
+
+/**
+ * Analytics (Umami): só entra no HTML quando endpoint e id estão definidos.
+ */
+function vitePluginAnalytics(endpoint: string, websiteId: string): Plugin {
+  return {
+    name: "scalio-analytics",
+    transformIndexHtml() {
+      if (!endpoint || !websiteId) return [];
+      return [
+        {
+          tag: "script",
+          attrs: { defer: true, src: `${endpoint.replace(/\/+$/, "")}/umami`, "data-website-id": websiteId },
+          injectTo: "head" as const,
+        },
+      ];
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, import.meta.dirname, "VITE_");
+  const siteUrl = (env.VITE_SITE_URL || "").replace(/\/+$/, "");
+
+  // Ferramental da plataforma Manus: útil no editor, peso morto em produção.
+  // Antes o runtime era injetado inline no index.html publicado (~367 KB) e
+  // o jsx-loc deixava atributos data-loc no bundle.
+  const devOnlyPlugins =
+    mode === "development"
+      ? [jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()]
+      : [];
+
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      vitePluginSeo(siteUrl),
+      vitePluginAnalytics(env.VITE_ANALYTICS_ENDPOINT || "", env.VITE_ANALYTICS_WEBSITE_ID || ""),
+      ...devOnlyPlugins,
     ],
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
+    resolve: {
+      alias: {
+        "@": path.resolve(import.meta.dirname, "client", "src"),
+      },
     },
-  },
+    envDir: path.resolve(import.meta.dirname),
+    root: path.resolve(import.meta.dirname, "client"),
+    build: {
+      outDir: path.resolve(import.meta.dirname, "dist/public"),
+      emptyOutDir: true,
+    },
+    server: {
+      port: 3000,
+      strictPort: false, // Will find next available port if 3000 is busy
+      host: true,
+      allowedHosts: [
+        ".manuspre.computer",
+        ".manus.computer",
+        ".manus-asia.computer",
+        ".manuscomputer.ai",
+        ".manusvm.computer",
+        "localhost",
+        "127.0.0.1",
+      ],
+      fs: {
+        strict: true,
+        deny: ["**/.*"],
+      },
+    },
+  };
 });
