@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.manus-logs
+.webdev
+.project-config.json
+README.md
+*.log
+.vscode
+.idea
+.DS_Store

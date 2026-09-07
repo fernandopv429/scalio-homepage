@@ -155,7 +155,87 @@ só dispare o relay após o aceite.
 
 ## Deploy
 
-O build gera `dist/public` (estático) e `dist/index.js` (Express).
+O build gera `dist/public` (estático) e `dist/index.js` (Express). O
+`Dockerfile` na raiz empacota os dois: build multi-stage e imagem final só
+com as dependências de produção.
+
+### Build-time x runtime — a distinção que quebra deploys
+
+| Classe        | Lidas em | Onde configurar                                  |
+| ------------- | -------- | ------------------------------------------------ |
+| `VITE_*`      | build    | **build args** — ficam gravadas no bundle        |
+| `META_CAPI_*` | runtime  | env do container — nunca entram na imagem        |
+
+Se `VITE_META_PIXEL_ID` for configurada só como env de runtime, o Pixel
+**não aparece no HTML**: naquele momento o bundle já foi gerado. O mesmo
+vale para `VITE_SITE_URL` (canonical, Open Graph, sitemap).
+
+### Coolify
+
+1. **New Resource → Application → Public/Private Repository**
+   - Repositório: `fernandopv429/scalio-homepage`
+   - Branch: a que você for publicar (hoje `main` depois do merge)
+2. **Build Pack: `Dockerfile`** (não use Nixpacks — o Dockerfile já cuida
+   do pnpm, do patch do wouter e do estágio de produção)
+3. **Ports Exposes: `3000`**
+4. **Environment Variables** — marque o checkbox *Build Variable* nas
+   `VITE_*` e deixe as outras como runtime:
+
+   | Variável                    | Valor                        | Build? |
+   | --------------------------- | ---------------------------- | ------ |
+   | `VITE_SITE_URL`             | `https://nexusdevhub.com`    | ✅ sim |
+   | `VITE_META_PIXEL_ID`        | `2796414304068060`           | ✅ sim |
+   | `META_CAPI_DATASET_ID`      | `2796414304068060`           | não    |
+   | `META_CAPI_ACCESS_TOKEN`    | *(token do CAPI)*            | não    |
+   | `META_CAPI_TEST_EVENT_CODE` | `TESTxxxxx` só durante teste | não    |
+
+5. **Healthcheck**: path `/api/health`, porta `3000`
+6. **Domains**: `https://nexusdevhub.com` (o Coolify cuida do certificado
+   via Traefik). Estando atrás do Cloudflare, use SSL/TLS em **Full
+   (strict)** — em *Flexible* dá loop de redirecionamento.
+7. Deploy. O log final deve mostrar:
+
+   ```
+   Server running on http://localhost:3000/
+   Meta CAPI: configurado
+   ```
+
+### Validando depois do deploy
+
+```bash
+curl https://nexusdevhub.com/api/health          # {"ok":true,...}
+curl https://nexusdevhub.com/api/meta/capi/health # {"configured":true}
+
+# Evento de teste real (com META_CAPI_TEST_EVENT_CODE preenchido ele cai
+# na aba "Testar eventos" e não suja os dados de produção):
+curl -X POST https://nexusdevhub.com/api/meta/capi \
+  -H 'Content-Type: application/json' \
+  -d '{"eventName":"Lead","eventId":"teste-1","user":{"email":"teste@exemplo.com"}}'
+```
+
+Confira também no HTML publicado que o Pixel e o canonical entraram:
+
+```bash
+curl -s https://nexusdevhub.com | grep -o "fbq('init','[0-9]*')"
+curl -s https://nexusdevhub.com | grep -o '<link rel="canonical"[^>]*>'
+```
+
+Se vierem vazios, as `VITE_*` não foram marcadas como build variable.
+
+### Rodando o container local
+
+```bash
+docker build -t scalio-homepage \
+  --build-arg VITE_SITE_URL=https://nexusdevhub.com \
+  --build-arg VITE_META_PIXEL_ID=2796414304068060 .
+
+docker run --rm -p 3000:3000 \
+  -e META_CAPI_DATASET_ID=2796414304068060 \
+  -e META_CAPI_ACCESS_TOKEN=... \
+  scalio-homepage
+```
+
+### Outros hosts
 
 - **Host estático** (Vercel, Netlify, Cloudflare Pages, S3): publique
   `dist/public` e configure rewrite de SPA — todas as rotas para
@@ -163,8 +243,7 @@ O build gera `dist/public` (estático) e `dist/index.js` (Express).
   Atenção: sem Node não existe `/api/meta/capi`, então **só o Pixel
   funciona** — o Conversions API exige o servidor ou uma função
   serverless equivalente.
-- **Node**: `pnpm build && pnpm start`. O Express já faz o fallback para
-  `index.html`, sem configuração extra.
+- **Node sem Docker**: `pnpm build && pnpm start`.
 
 `robots.txt` e `sitemap.xml` são gerados no build (o sitemap só quando
 `VITE_SITE_URL` está definido).

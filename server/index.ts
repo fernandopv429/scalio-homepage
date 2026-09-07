@@ -46,6 +46,11 @@ async function startServer() {
   app.set("trust proxy", true);
   app.disable("x-powered-by");
 
+  // Healthcheck do container (usado pelo Coolify/Docker).
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true, uptime: Math.round(process.uptime()) });
+  });
+
   // ---------------------------------------------------------------- Meta CAPI
   app.get("/api/meta/capi/health", (_req, res) => {
     res.json({ configured: isConfigured() });
@@ -114,6 +119,15 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
     console.log(`Meta CAPI: ${isConfigured() ? "configurado" : "sem credenciais (eventos ignorados)"}`);
   });
+
+  // O Docker manda SIGTERM no deploy: fechar limpo evita esperar o timeout.
+  const shutdown = (signal: string) => {
+    console.log(`${signal} recebido, encerrando`);
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 startServer().catch(console.error);
